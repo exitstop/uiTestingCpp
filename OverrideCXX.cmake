@@ -1,0 +1,6 @@
+if(MSVC)
+  set(CMAKE_CXX_FLAGS_DEBUG_INIT          "/MTd /Zi /Ob0 /Zc:wchar_t /Od /RTC1")
+  set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT     "/MT /O1 /Ob1 /Zc:wchar_t /DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE_INIT        "/MT /O2 /Ob2 /Zc:wchar_t /DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "/MT /Zi /O2  /Zc:wchar_t /Ob1 /DNDEBUG")
+endif()
