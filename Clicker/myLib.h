@@ -22,8 +22,9 @@ private:
 	Clicker& operator =(const Clicker&) {};
 	std::wstring getName(CComPtr<IAccessible> pAcc);
 	std::wstring getClass(CComPtr<IAccessible> pAcc);
-	void checkItem();
 	void findWindows(std::wstring nameFindProg_, std::wstring nameFindClass_);
+	ReturnWalker openAbout(CComQIPtr<IAccessible>& pAccChild, std::wstring nameButton, bool flagRecursion);
+	ReturnWalker closeAbout(CComQIPtr<IAccessible>& pAccChild, std::wstring nameButton, bool flagRecursion);
 public:	
 	~Clicker();
 	static Clicker& getInstance()

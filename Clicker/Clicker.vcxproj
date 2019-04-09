@@ -154,9 +154,11 @@
   <ItemGroup>
     <ClCompile Include="Clicker.cpp" />
     <ClCompile Include="myLib.cpp" />
+    <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myLib.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

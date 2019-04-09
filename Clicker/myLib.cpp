@@ -1,4 +1,5 @@
 ﻿#include "myLib.h"
+#include "util.h"
 
 HWND hWndVictim = NULL;
 std::wstring nameFindClass = L"WebViewHost";
@@ -10,38 +11,6 @@ Clicker::Clicker() {
 
 Clicker::~Clicker() {
 
-}
-
-PROCESS_INFORMATION launchProc(std::wstring procName, DWORD timeOut) {
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-
-
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-
-	// Start the child process. 
-	if (!CreateProcess(NULL,   // No module name (use command line)
-		(LPWSTR)procName.c_str(),        // Command line
-		NULL,           // Process handle not inheritable
-		NULL,           // Thread handle not inheritable
-		FALSE,          // Set handle inheritance to FALSE
-		0,              // No creation flags
-		NULL,           // Use parent's environment block
-		NULL,           // Use parent's starting directory 
-		&si,            // Pointer to STARTUPINFO structure
-		&pi)           // Pointer to PROCESS_INFORMATION structure
-		)
-	{
-		printf("CreateProcess failed (%d).\n", GetLastError());
-		return pi;
-	}
-
-	// Wait until child process exits.
-	WaitForSingleObject(pi.hProcess, timeOut);
-
-	return pi;
 }
 
 void findWindows(std::wstring nameFindProg_, std::wstring nameFindClass_)
@@ -70,21 +39,30 @@ void findWindows(std::wstring nameFindProg_, std::wstring nameFindClass_)
 	::EnumWindows(lambda, 0);
 }
 
-
 bool Clicker::run()
 {
+	// Как работать с IAccessible
+	// https://habr.com/ru/company/infopulse/blog/253729/
+
+
+	/*
+
 	PROCESS_INFORMATION piUiWinMgr = launchProc(L"C:\\Program Files\\Trend Micro\\Titanium\\UIFramework\\uiWinMgr.exe", 1000);
-	// Эта программа как то влияет на определение кнопок в Антивирусе
-	PROCESS_INFORMATION piAccEvent = launchProc(L"AccEvent.exe", 1000);
+	
+	
 	
 	::CoInitialize(NULL);
-
+	
 	::findWindows(L"", L"WebViewHost");
 	findWindows(L"Trend Micro Maximum Security", L"WebViewHost");
 
 	if (::hWndVictim == NULL) {
 		return false;
 	}
+
+	// Без этого нельзя считать данные из окна
+	CComPtr<IAccessible> pAccMain0;
+	HRESULT hr = ::AccessibleObjectFromWindow(::hWndVictim, 1, IID_IAccessible, (void**)(&pAccMain0)); // 1 - захардкоженный идентификатор ловушки
 
 	CComPtr<IAccessible> pAccMain;
 	::AccessibleObjectFromWindow(::hWndVictim, OBJID_CLIENT, IID_IAccessible, (void**)(&pAccMain));
@@ -101,6 +79,10 @@ bool Clicker::run()
 			return false;
 		}		
 
+		// Без этого нельзя считать данные из окна
+		CComPtr<IAccessible> pAccMain0;
+		HRESULT hr = ::AccessibleObjectFromWindow(::hWndVictim, 1, IID_IAccessible, (void**)(&pAccMain0)); // 1 - захардкоженный идентификатор ловушки
+
 		CComPtr<IAccessible> pAccMain;
 		::AccessibleObjectFromWindow(::hWndVictim, OBJID_CLIENT, IID_IAccessible, (void**)(&pAccMain));
 
@@ -110,20 +92,24 @@ bool Clicker::run()
 		}
 		// Закроем окно About Your Software
 		WalkTreeWithAccessibleChildren(pAccMain, L"Close", true);
-	}	
-	
-	::TerminateProcess(piAccEvent.hProcess, 0);
-	::TerminateProcess(piUiWinMgr.hProcess, 0);
+	}
 
-	::CloseHandle(piAccEvent.hProcess);
-	::CloseHandle(piAccEvent.hThread);
+
+	// Закроем антивирус
+	::TerminateProcess(piUiWinMgr.hProcess, 0);
 	::CloseHandle(piUiWinMgr.hProcess);
-	::CloseHandle(piUiWinMgr.hThread);
+	::CloseHandle(piUiWinMgr.hThread);	
+
+	*/
+
+	// Сканируем файл на вирусы
+	PROCESS_INFORMATION piPowerShell = launchProc(L"powershell -File C:\\Users\\user\\source\\repos\\Clicker\\Clicker\\contextMenu.ps1", 1000);
+	::TerminateProcess(piPowerShell.hProcess, 0);
+	::CloseHandle(piPowerShell.hProcess);
+	::CloseHandle(piPowerShell.hThread);
 
 	return true;
 }
-
-
 
 void Clicker::findWindows(std::wstring nameFindProg_, std::wstring nameFindClass_)
 {
@@ -179,17 +165,18 @@ std::wstring Clicker::getClass(CComPtr<IAccessible> pAcc)
 std::wstring Clicker::getName(CComPtr<IAccessible> pAcc)
 {
 	CComBSTR bstrName;
-
-	if (!pAcc
-		|| FAILED(pAcc->get_accName(CComVariant((int)CHILDID_SELF), &bstrName))
-		|| !bstrName.m_str) {
+	HRESULT ret{ 0 };
+	try {
+		ret = pAcc->get_accName(CComVariant((int)CHILDID_SELF), &bstrName);
+	}catch (...) {
+		return L"";
+	}
+	if (!pAcc || ret || (bstrName && !bstrName.m_str)) {
 		return L"";
 	}
 
 	return bstrName.m_str;
 }
-
-
 
 ReturnWalker Clicker::WalkTreeWithAccessibleChildren(CComPtr<IAccessible> pAcc, std::wstring nameButton , bool flagRecursion)
 {
@@ -225,6 +212,7 @@ ReturnWalker Clicker::WalkTreeWithAccessibleChildren(CComPtr<IAccessible> pAcc, 
 		std::wcout << " class = " << className << " name = " << name << std::endl;
 
 		if (name.find(L"About the Software") != -1) {
+			// open menu
 			VARIANT varId;
 			varId.vt = VT_I4;
 			varId.lVal = CHILDID_SELF;
@@ -232,72 +220,22 @@ ReturnWalker Clicker::WalkTreeWithAccessibleChildren(CComPtr<IAccessible> pAcc, 
 		}
 
 		if ( wcscmp(nameButton.c_str(), L"lbl_titlebar_account") == 0) {
-
+			// openAbout
 			if (flagRecursion && name.find(nameButton) != -1) {
-				VARIANT varId;
-				varId.vt = VT_I4;
-				varId.lVal = CHILDID_SELF;
-				pAccChild->accDoDefaultAction(varId);
-
-				IDispatch* ppdispParent{ 0 };
-				pAccChild->get_accParent(&ppdispParent);
-
-				long childCountLocal = 0;
-
-				CComQIPtr<IAccessible> pAccChildLocal(static_cast<IAccessible*>(ppdispParent));
-
-
-				HRESULT hr = pAccChildLocal->get_accChildCount(&childCountLocal);
-
-				std::cout << "childCountLocal = " << childCountLocal << std::endl;
-
-				if (childCountLocal == 0) {
-					return ReturnWalker::OK;
-				}
-
-				std::vector<CComVariant> pArrayLocal(childCountLocal);
-				hr = ::AccessibleChildren(pAccChildLocal, 0L, childCountLocal, pArrayLocal.data(), &returnCount);
-				if (FAILED(hr)) {
-					return ReturnWalker::NONE;
-				}
-
-				for (int x = 0; x < childCountLocal; x++)
-				{
-					CComVariant vtChild = pArrayLocal[x];
-					if (vtChild.vt != VT_DISPATCH) {
-						continue;
-					}
-
-					CComQIPtr<IAccessible> pAccChildLocal(static_cast<IAccessible*>(vtChild.pdispVal));
-					if (!pAccChildLocal) {
-						continue;
-					}
-
-					std::wstring name = getName(pAccChildLocal).data();
-					std::wcout << "-------------name = " << name << std::endl;
-					flagRecursion = false;
-					ReturnWalker ret = WalkTreeWithAccessibleChildren(pAccChildLocal, nameButton, flagRecursion);
-					if (ret != ReturnWalker::OK) {
-						return ReturnWalker::OK;
-					}
-				}
-
-				std::cout << "------------------Click();" << std::endl;
-
-				if (!flagRecursion) {
-					return ReturnWalker::OK;
+				ReturnWalker ret = openAbout(pAccChild, nameButton, flagRecursion);
+				if (ret  != ReturnWalker::NO_FOUND) {
+					return ret;
 				}
 			}
 		}
 		else if (wcscmp(nameButton.c_str(), L"Close") == 0) {
+			// closeAbout
 			if (flagRecursion && name.find(nameButton) != -1) {
-				VARIANT varId;
-				varId.vt = VT_I4;
-				varId.lVal = CHILDID_SELF;
-				pAccChild->accDoDefaultAction(varId);
+				closeAbout(pAccChild, nameButton, flagRecursion);
 			}
 		}
 		else if (wcscmp(nameButton.c_str(), L"Components are up-to-date.") == 0) {
+			// waitAbout
 			if (flagRecursion && name.find(L"Checking for program updates...") != -1) {
 				return ReturnWalker::NO_FOUND;
 			}
@@ -328,3 +266,72 @@ ReturnWalker Clicker::WalkTreeWithAccessibleChildren(CComPtr<IAccessible> pAcc, 
 }
 
 
+ReturnWalker Clicker::openAbout(CComQIPtr<IAccessible>& pAccChild, std::wstring nameButton, bool flagRecursion)
+{
+	VARIANT varId;
+	varId.vt = VT_I4;
+	varId.lVal = CHILDID_SELF;
+	pAccChild->accDoDefaultAction(varId);
+
+	IDispatch* ppdispParent{ 0 };
+	pAccChild->get_accParent(&ppdispParent);
+
+	long childCountLocal = 0;
+
+	CComQIPtr<IAccessible> pAccChildLocal(static_cast<IAccessible*>(ppdispParent));
+
+
+	HRESULT hr = pAccChildLocal->get_accChildCount(&childCountLocal);
+
+	std::cout << "childCountLocal = " << childCountLocal << std::endl;
+
+	if (childCountLocal == 0) {
+		return ReturnWalker::OK;
+	}
+
+	std::vector<CComVariant> pArrayLocal(childCountLocal);
+	long returnCount = 0;
+	hr = ::AccessibleChildren(pAccChildLocal, 0L, childCountLocal, pArrayLocal.data(), &returnCount);
+	if (FAILED(hr)) {
+		return ReturnWalker::NONE;
+	}
+
+	for (int x = 0; x < childCountLocal; x++)
+	{
+		CComVariant vtChild = pArrayLocal[x];
+		if (vtChild.vt != VT_DISPATCH) {
+			continue;
+		}
+
+		CComQIPtr<IAccessible> pAccChildLocal(static_cast<IAccessible*>(vtChild.pdispVal));
+		if (!pAccChildLocal) {
+			continue;
+		}
+
+		std::wstring name = getName(pAccChildLocal).data();
+		std::wcout << "-------------name = " << name << std::endl;
+		flagRecursion = false;
+		ReturnWalker ret = WalkTreeWithAccessibleChildren(pAccChildLocal, nameButton, flagRecursion);
+		if (ret != ReturnWalker::OK) {
+			return ReturnWalker::OK;
+		}
+	}
+
+	std::cout << "------------------Click();" << std::endl;
+	if (!flagRecursion) {
+		ReturnWalker::OK;
+	}
+	else {
+		ReturnWalker::NO_FOUND;
+	}
+
+}
+
+ReturnWalker Clicker::closeAbout(CComQIPtr<IAccessible>& pAccChild, std::wstring nameButton, bool flagRecursion)
+{
+	VARIANT varId;
+	varId.vt = VT_I4;
+	varId.lVal = CHILDID_SELF;
+	pAccChild->accDoDefaultAction(varId);
+	return ReturnWalker::OK;
+}
