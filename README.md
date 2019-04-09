@@ -6,4 +6,5 @@
 oleacc.lib
 
 # CMake
-Просто запустить build_release.bat
+Просто запустить build_release.bat указав свою версию Visual Studio
+cmake -G - Покажет возможные варианты
