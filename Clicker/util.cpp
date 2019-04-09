@@ -11,7 +11,7 @@ PROCESS_INFORMATION launchProc(std::wstring procName, DWORD timeOut) {
 
 	// Start the child process. 
 	if (!CreateProcess(NULL,   // No module name (use command line)
-		(LPWSTR)procName.c_str(),        // Command line
+		(LPTSTR)procName.c_str(),        // Command line
 		NULL,           // Process handle not inheritable
 		NULL,           // Thread handle not inheritable
 		FALSE,          // Set handle inheritance to FALSE
