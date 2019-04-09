@@ -1,3 +1,6 @@
+# if error execute
+# Set-ExecutionPolicy RemoteSigned
+
 $o = new-object -com Shell.Application
 $folder = $o.NameSpace("C:\Users\user\source\repos\Clicker\x64\Debug")
 $file=$folder.ParseName("Clicker.ilk")
