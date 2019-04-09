@@ -44,12 +44,9 @@ bool Clicker::run()
 	// Как работать с IAccessible
 	// https://habr.com/ru/company/infopulse/blog/253729/
 
-
-	/*
-
-	PROCESS_INFORMATION piUiWinMgr = launchProc(L"C:\\Program Files\\Trend Micro\\Titanium\\UIFramework\\uiWinMgr.exe", 1000);
-	
-	
+	// Запускаем антивирус
+	PROCESS_INFORMATION piUiWinMgr = launchProc(L"C:\\Program Files\\Trend Micro\\Titanium\\UIFramework\\uiWinMgr.exe", 1000);	
+	Sleep(3000);
 	
 	::CoInitialize(NULL);
 	
@@ -100,7 +97,7 @@ bool Clicker::run()
 	::CloseHandle(piUiWinMgr.hProcess);
 	::CloseHandle(piUiWinMgr.hThread);	
 
-	*/
+	
 
 	// Сканируем файл на вирусы
 	PROCESS_INFORMATION piPowerShell = launchProc(L"powershell -File C:\\Users\\user\\source\\repos\\Clicker\\Clicker\\contextMenu.ps1", 1000);
