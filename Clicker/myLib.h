@@ -8,6 +8,12 @@
 #include <oleacc.h>
 #include <atlbase.h>
 
+enum class ReturnWalker {
+	FOUND,
+	NO_FOUND,
+	NONE,
+	OK
+};
 
 class Clicker {
 private:	
@@ -28,5 +34,5 @@ public:
 
 	bool run();
 
-	HRESULT WalkTreeWithAccessibleChildren(CComPtr<IAccessible> pAcc, bool flagRecursion = true);	
+	ReturnWalker WalkTreeWithAccessibleChildren(CComPtr<IAccessible> pAcc, std::wstring nameButton, bool flagRecursion);
 };
